@@ -3,21 +3,23 @@ import psycopg2
 
 class Mybd:
     def __init__(self):
+        self.create_tables()
+    def create_tables(self):
         with psycopg2.connect(database="cl_db", user="postgres", password="123") as conn:
             with conn.cursor() as cur:
                 cur.execute('''
                     DROP TABLE IF EXISTS c_phones;
                     DROP TABLE IF EXISTS clients;
                     CREATE TABLE clients (
-                    client_id SERIAL PRIMARY KEY,
-                    c_name VARCHAR(25),
-                    c_lastname VARCHAR(30),
-                    c_email VARCHAR(30)
+                        client_id SERIAL PRIMARY KEY,
+                        c_name VARCHAR(25),
+                        c_lastname VARCHAR(30),
+                        c_email VARCHAR(30)
                     );
                     CREATE TABLE c_phones (
-                    id SERIAL PRIMARY KEY,
-                    client_id INTEGER NOT NULL REFERENCES clients(client_id),
-                    phone VARCHAR(20) NOT NULL UNIQUE
+                        id SERIAL PRIMARY KEY,
+                        client_id INTEGER NOT NULL REFERENCES clients(client_id),
+                        phone VARCHAR(20) NOT NULL UNIQUE
                     );
                     ''')
             conn.commit()
