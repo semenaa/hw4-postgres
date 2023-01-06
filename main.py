@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2.sql import SQL, Identifier
 
 
 def create_tables():
@@ -15,7 +16,7 @@ def create_tables():
             CREATE TABLE c_phones (
                 id SERIAL PRIMARY KEY,
                 client_id INTEGER NOT NULL REFERENCES clients(client_id),
-                phone VARCHAR(20) NOT NULL UNIQUE
+                c_phone VARCHAR(20) NOT NULL UNIQUE
             );
             ''')
     conn.commit()
@@ -33,7 +34,7 @@ def add_client(c_name, c_lastname, c_email):
 def add_client_phone(client_id, c_phone):
     with conn.cursor() as cur:
         cur.execute('''
-            INSERT INTO c_phones(client_id, phone) 
+            INSERT INTO c_phones(client_id, c_phone) 
             VALUES(%s, %s);
             ''', (client_id, c_phone))
     conn.commit()
@@ -41,13 +42,13 @@ def add_client_phone(client_id, c_phone):
 
 def modify_client(client_id, c_name=None, c_lastname=None, c_email=None):
     with conn.cursor() as cur:
-        for field in [c_name, c_lastname, c_email]:
+        for name, field in {'c_name': c_name, 'c_lastname': c_lastname, 'c_email': c_email}.items():
             if field is not None:
-                cur.execute('''
+                cur.execute(SQL('''
                             UPDATE clients
-                            SET  = %s
+                            SET {} = %s
                             WHERE client_id = %s;
-                            ''', (field, client_id))
+                            ''').format(Identifier(name)), (field, client_id))
     conn.commit()
 
 
@@ -73,12 +74,17 @@ def del_client(client_id):
     conn.commit()
 
 
+def enrich(stringgg):
+    if stringgg is not None:
+        stringgg = '%' + stringgg + '%'
+    return stringgg
+
+
 def find_client(c_name=None, c_lastname=None, c_email=None, c_phone=None):
-    for field in [c_name, c_lastname, c_email, c_phone]:
-        if field is None:
-            field = '%%'
-        else:
-            field = '%' + field + '%'
+    c_name = enrich(c_name)
+    c_lastname = enrich(c_lastname)
+    c_email = enrich(c_email)
+    c_phone = enrich(c_phone)
     with conn.cursor() as cur:
         cur.execute('''
             SELECT c_name, c_lastname, c_email FROM clients cl
@@ -86,21 +92,27 @@ def find_client(c_name=None, c_lastname=None, c_email=None, c_phone=None):
             WHERE c_name LIKE %s
             OR c_lastname LIKE %s
             OR c_email LIKE %s
-            OR phone LIKE %s;
+            OR c_phone LIKE %s;
             ''', (c_name, c_lastname, c_email, c_phone))
-        print(cur.fetchall())
+        result = cur.fetchall()
+        if result != []:
+            print(result)
+        else:
+            print('No such row')
 
 
 if __name__ == '__main__':
     with psycopg2.connect(database="cl_db", user="postgres", password="123") as conn:
         create_tables()
         add_client('Sergei', 'Smirnov', 'ssmirnov@mail.ru')
-        add_client('Andrei', 'Zakharov', 'azakharov@mail.ru')
+        add_client('Andrei', 'Zakharov', 'azakharov@gmail.ru')
+        add_client('Tupac', 'Shakur', '2pac@yahoo.com')
         add_client_phone(1, '123456789')
         add_client_phone(1, '987654321')
-        modify_client(2, )
+        modify_client(2, c_name='Ondrei')
         del_c_phone(1, '123456789')
         del_client(2)
         find_client(c_lastname='Smirnov')
         find_client(c_phone='987654321')
-        
+        find_client(c_email='2pac')
+        find_client(c_name='Ond')
